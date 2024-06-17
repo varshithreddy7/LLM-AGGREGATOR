@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import ChatWindow from './ChatWindow';
 import InputArea from './InputArea';
 import './styles.css';
+import axios from 'axios';
 
 const ChatContainer = () => {
   const [messages, setMessages] = useState([]);
@@ -17,21 +18,18 @@ const ChatContainer = () => {
       setInput('');
 
       try {
-        const response = await fetch('http://localhost:3000/api/sendMessage', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ message: input, model: selectedModel }), // Send message and selected model to backend
-        });
-
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+        let response;
+        if (selectedModel === 'Gemini AI') {
+          response = await axios.post('http://localhost:5000/api/gemini', { prompt: input });
+        } else if (selectedModel === 'Mistral') {
+          response = await axios.post('http://localhost:5000/api/mistral', { prompt: input });
+        } else {
+          // Handle other models here if needed
+          return;
         }
 
-        const data = await response.json();
-        const botReply = { text: data.reply, sender: 'bot' };
-        setMessages((prevMessages) => [...prevMessages, botReply]); // Update messages with bot's reply
+        const botReply = { text: response.data.response, sender: 'bot' };
+        setMessages([...messages, botReply]); // Update messages with bot's reply
       } catch (error) {
         console.error('Failed to fetch:', error);
         // Optionally handle errors here
@@ -47,12 +45,10 @@ const ChatContainer = () => {
     <div className="chat-container">
       <h1>LLM Aggregator</h1>
       <div className="model-select">
-        <label>Select Model:</label>
-        <select value={selectedModel} onChange={handleModelChange}>
+        <label htmlFor="modelSelect">Select Model:</label>
+        <select id="modelSelect" value={selectedModel} onChange={handleModelChange}>
           <option value="Gemini AI">Gemini AI</option>
-          <option value="ChatGPT">ChatGPT</option>
-          <option value="Other Model 1">Other Model 1</option>
-          <option value="Other Model 2">Other Model 2</option>
+          <option value="Mistral">Mistral</option>
           {/* Add more options as needed */}
         </select>
       </div>
@@ -65,3 +61,4 @@ const ChatContainer = () => {
 };
 
 export default ChatContainer;
+
